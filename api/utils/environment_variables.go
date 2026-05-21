@@ -46,6 +46,13 @@ const (
 	EnvVideoHardwareAcceleration EnvironmentVariable = "PHOTOVIEW_VIDEO_HARDWARE_ACCELERATION"
 )
 
+// Header (reverse-proxy SSO) authentication
+const (
+	EnvHeaderAuthEnabled        EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_ENABLED"
+	EnvHeaderAuthUsernameHeader EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_USERNAME_HEADER"
+	EnvHeaderAuthTrustedProxies EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_TRUSTED_PROXIES"
+)
+
 // GetName returns the name of the environment variable itself
 func (v EnvironmentVariable) GetName() string {
 	return string(v)

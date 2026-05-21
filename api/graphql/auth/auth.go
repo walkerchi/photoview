@@ -32,7 +32,7 @@ func Middleware(db *gorm.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			if tokenCookie, err := r.Cookie("auth-token"); err == nil {
+			if tokenCookie, err := r.Cookie(AuthTokenCookieName); err == nil {
 				loaders := dataloader.For(r.Context())
 				if loaders == nil {
 					log.Error(r.Context(), "Dataloader not available in HTTP context")
@@ -61,7 +61,19 @@ func Middleware(db *gorm.DB) func(http.Handler) http.Handler {
 				// and call the next with our new context
 				r = r.WithContext(ctx)
 			} else {
-				log.Info(r.Context(), "Did not find auth-token cookie")
+				// No cookie: optionally accept a Remote-User header injected by
+				// a trusted reverse proxy. This lets Authelia / authentik /
+				// oauth2-proxy front Photoview as true SSO — the proxy's
+				// identity becomes a Photoview session.
+				if user, err := applyHeaderAuth(db, w, r); err != nil {
+					log.Error(r.Context(), "Header auth failed", "error", err)
+					http.Error(w, INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
+					return
+				} else if user != nil {
+					r = r.WithContext(AddUserToContext(r.Context(), user))
+				} else {
+					log.Info(r.Context(), "Did not find auth-token cookie")
+				}
 			}
 
 			next.ServeHTTP(w, r)
