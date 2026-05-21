@@ -50,6 +50,8 @@ const (
 const (
 	EnvHeaderAuthEnabled        EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_ENABLED"
 	EnvHeaderAuthUsernameHeader EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_USERNAME_HEADER"
+	EnvHeaderAuthGroupsHeader   EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_GROUPS_HEADER"
+	EnvHeaderAuthAdminGroups    EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_ADMIN_GROUPS"
 	EnvHeaderAuthTrustedProxies EnvironmentVariable = "PHOTOVIEW_HEADER_AUTH_TRUSTED_PROXIES"
 )
 

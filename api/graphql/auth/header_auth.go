@@ -22,6 +22,8 @@ const AuthTokenCookieName = "auth-token"
 type HeaderAuthConfig struct {
 	Enabled        bool
 	UsernameHeader string
+	GroupsHeader   string
+	AdminGroups    []string
 	TrustedProxies []*net.IPNet
 }
 
@@ -49,9 +51,18 @@ func loadHeaderAuthConfig() HeaderAuthConfig {
 	cfg := HeaderAuthConfig{
 		Enabled:        utils.EnvHeaderAuthEnabled.GetBool(),
 		UsernameHeader: utils.EnvHeaderAuthUsernameHeader.GetValue(),
+		GroupsHeader:   utils.EnvHeaderAuthGroupsHeader.GetValue(),
 	}
 	if cfg.UsernameHeader == "" {
 		cfg.UsernameHeader = "Remote-User"
+	}
+	if cfg.GroupsHeader == "" {
+		cfg.GroupsHeader = "Remote-Groups"
+	}
+	for _, g := range strings.Split(utils.EnvHeaderAuthAdminGroups.GetValue(), ",") {
+		if g = strings.TrimSpace(g); g != "" {
+			cfg.AdminGroups = append(cfg.AdminGroups, g)
+		}
 	}
 	raw := utils.EnvHeaderAuthTrustedProxies.GetValue()
 	if raw == "" {
@@ -83,6 +94,26 @@ func loadHeaderAuthConfig() HeaderAuthConfig {
 		log.Warn(nil, "PHOTOVIEW_HEADER_AUTH_ENABLED=1 but no trusted proxies parsed; header auth will reject all requests")
 	}
 	return cfg
+}
+
+// IsAdminFromHeader reports whether the comma-separated groups header value
+// names any of the configured admin groups.
+func (c HeaderAuthConfig) IsAdminFromHeader(groupsHeader string) bool {
+	if len(c.AdminGroups) == 0 {
+		return false
+	}
+	for _, raw := range strings.Split(groupsHeader, ",") {
+		got := strings.TrimSpace(raw)
+		if got == "" {
+			continue
+		}
+		for _, want := range c.AdminGroups {
+			if got == want {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // IsTrustedRemote reports whether the connection's peer address falls inside
@@ -123,17 +154,57 @@ func applyHeaderAuth(db *gorm.DB, w http.ResponseWriter, r *http.Request) (*mode
 		return nil, nil
 	}
 
+	groupsHeader := r.Header.Get(cfg.GroupsHeader)
+	groupSaysAdmin := cfg.IsAdminFromHeader(groupsHeader)
+
 	var user models.User
 	if err := db.Where("username = ?", username).First(&user).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.Wrap(err, "header auth: lookup user")
 		}
-		provisioned, err := models.RegisterUser(db, username, nil, false)
+
+		// When AdminGroups is configured the proxy is the source of truth for
+		// admin role. When it isn't configured we fall back to "first SSO
+		// user gets admin" so a misconfigured groups header can't leave the
+		// instance unmanageable.
+		siteInfo, err := models.GetSiteInfo(db)
 		if err != nil {
-			return nil, errors.Wrap(err, "header auth: auto-provision user")
+			return nil, errors.Wrap(err, "header auth: load site info")
 		}
-		user = *provisioned
-		log.Info(r.Context(), "header auth: provisioned new user", "username", username)
+		makeAdmin := groupSaysAdmin
+		if len(cfg.AdminGroups) == 0 && siteInfo.InitialSetup {
+			makeAdmin = true
+		}
+		closeInitialSetup := siteInfo.InitialSetup
+
+		txErr := db.Transaction(func(tx *gorm.DB) error {
+			if closeInitialSetup {
+				if err := tx.Exec("UPDATE site_info SET initial_setup = false").Error; err != nil {
+					return errors.Wrap(err, "close initial setup")
+				}
+			}
+			provisioned, err := models.RegisterUser(tx, username, nil, makeAdmin)
+			if err != nil {
+				return errors.Wrap(err, "register user")
+			}
+			user = *provisioned
+			return nil
+		})
+		if txErr != nil {
+			return nil, errors.Wrap(txErr, "header auth: auto-provision user")
+		}
+		log.Info(r.Context(), "header auth: provisioned new user",
+			"username", username, "admin", makeAdmin)
+	} else if len(cfg.AdminGroups) > 0 && user.Admin != groupSaysAdmin {
+		// Existing user, AdminGroups configured: SSO group is the source of
+		// truth, so reconcile Photoview's flag to match. Without AdminGroups
+		// we leave Photoview's internal admin flag alone for back-compat.
+		user.Admin = groupSaysAdmin
+		if err := db.Save(&user).Error; err != nil {
+			return nil, errors.Wrap(err, "header auth: sync admin flag")
+		}
+		log.Info(r.Context(), "header auth: synced admin flag from SSO group",
+			"username", username, "admin", groupSaysAdmin)
 	}
 
 	// Reuse the longest-lived non-expired token, otherwise mint a fresh one.

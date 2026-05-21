@@ -57,6 +57,35 @@ func TestHeaderAuthConfig_DefaultUsernameHeader(t *testing.T) {
 
 	cfg := auth.GetHeaderAuthConfig()
 	assert.Equal(t, "Remote-User", cfg.UsernameHeader)
+	assert.Equal(t, "Remote-Groups", cfg.GroupsHeader)
+}
+
+func TestHeaderAuthConfig_AdminGroups(t *testing.T) {
+	cases := []struct {
+		name        string
+		envValue    string
+		groupHeader string
+		expectAdmin bool
+	}{
+		{"unconfigured never admin", "", "admins", false},
+		{"exact match", "admins", "admins", true},
+		{"comma-separated header contains group", "admins", "users, admins, mfa", true},
+		{"mismatched group", "admins", "users", false},
+		{"multiple admin groups", "ops,admins", "developers, admins", true},
+		{"whitespace tolerant", "  admins  ", "admins", true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			auth.ResetHeaderAuthConfigForTest()
+			t.Setenv("PHOTOVIEW_HEADER_AUTH_ENABLED", "1")
+			t.Setenv("PHOTOVIEW_HEADER_AUTH_ADMIN_GROUPS", tc.envValue)
+			t.Cleanup(auth.ResetHeaderAuthConfigForTest)
+
+			cfg := auth.GetHeaderAuthConfig()
+			assert.Equal(t, tc.expectAdmin, cfg.IsAdminFromHeader(tc.groupHeader))
+		})
+	}
 }
 
 // runRequest fires req through dataloader+auth middleware and returns the
@@ -128,10 +157,14 @@ func TestHeaderAuth(t *testing.T) {
 		assert.True(t, hasAuthCookie, "expected Set-Cookie: auth-token on header-auth success")
 	})
 
-	t.Run("auto-provisions new user", func(t *testing.T) {
+	t.Run("auto-provisions new user as non-admin once setup is closed", func(t *testing.T) {
 		auth.ResetHeaderAuthConfigForTest()
 		t.Setenv("PHOTOVIEW_HEADER_AUTH_ENABLED", "1")
 		t.Setenv("PHOTOVIEW_HEADER_AUTH_TRUSTED_PROXIES", "127.0.0.1/32")
+
+		// Ensure initial setup is closed for this subtest so we exercise the
+		// non-admin provisioning path (first-admin path is covered separately).
+		require.NoError(t, db.Exec("UPDATE site_info SET initial_setup = false").Error)
 
 		req := httptest.NewRequest("GET", "/graphql", nil)
 		req.RemoteAddr = "127.0.0.1:54321"
@@ -175,6 +208,55 @@ func TestHeaderAuth(t *testing.T) {
 		assert.Equal(t, 200, rec.Code)
 		require.NotNil(t, observed)
 		assert.Equal(t, existing.ID, observed.ID)
+	})
+
+	t.Run("first SSO user becomes admin and closes initial setup", func(t *testing.T) {
+		// Reset to a fresh setup state: no users, initial_setup=true.
+		require.NoError(t, db.Exec("DELETE FROM access_tokens").Error)
+		require.NoError(t, db.Exec("DELETE FROM user_albums").Error)
+		require.NoError(t, db.Exec("DELETE FROM users").Error)
+		require.NoError(t, db.Exec("UPDATE site_info SET initial_setup = true").Error)
+
+		auth.ResetHeaderAuthConfigForTest()
+		t.Setenv("PHOTOVIEW_HEADER_AUTH_ENABLED", "1")
+		t.Setenv("PHOTOVIEW_HEADER_AUTH_TRUSTED_PROXIES", "127.0.0.1/32")
+
+		req := httptest.NewRequest("GET", "/graphql", nil)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.Header.Set("Remote-User", "the-operator")
+
+		rec, observed := runRequest(db, req)
+
+		assert.Equal(t, 200, rec.Code)
+		require.NotNil(t, observed)
+		assert.Equal(t, "the-operator", observed.Username)
+		assert.True(t, observed.Admin, "first SSO user must become admin")
+
+		siteInfo, err := models.GetSiteInfo(db)
+		require.NoError(t, err)
+		assert.False(t, siteInfo.InitialSetup,
+			"initial_setup must be closed after first SSO admin is provisioned")
+	})
+
+	t.Run("stale cookie falls through to header auth when SSO is enabled", func(t *testing.T) {
+		auth.ResetHeaderAuthConfigForTest()
+		t.Setenv("PHOTOVIEW_HEADER_AUTH_ENABLED", "1")
+		t.Setenv("PHOTOVIEW_HEADER_AUTH_TRUSTED_PROXIES", "127.0.0.1/32")
+
+		// Ensure the SSO user exists so we exercise the lookup path, not provisioning.
+		_, err := models.RegisterUser(db, "stale-cookie-user", nil, false)
+		require.NoError(t, err)
+
+		req := httptest.NewRequest("GET", "/graphql", nil)
+		req.RemoteAddr = "127.0.0.1:54321"
+		req.AddCookie(&http.Cookie{Name: "auth-token", Value: "DEFINITELY_NOT_A_REAL_TOKEN_24"})
+		req.Header.Set("Remote-User", "stale-cookie-user")
+
+		rec, observed := runRequest(db, req)
+
+		assert.Equal(t, 200, rec.Code, "SSO mode must recover from a stale cookie instead of 401")
+		require.NotNil(t, observed)
+		assert.Equal(t, "stale-cookie-user", observed.Username)
 	})
 
 	t.Run("missing header on trusted remote is a no-op", func(t *testing.T) {
