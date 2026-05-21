@@ -32,6 +32,8 @@ func Middleware(db *gorm.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+			var ctxUser *models.User
+
 			if tokenCookie, err := r.Cookie(AuthTokenCookieName); err == nil {
 				loaders := dataloader.For(r.Context())
 				if loaders == nil {
@@ -41,39 +43,48 @@ func Middleware(db *gorm.DB) func(http.Handler) http.Handler {
 				}
 
 				user, err := loaders.UserFromAccessToken.Load(tokenCookie.Value)
-				// Check for dataloader errors (database failures, etc.)
+				// Database errors are still surfaced as a 500 — that's a real
+				// problem, not a stale session.
 				if err != nil {
 					log.Error(r.Context(), "Error loading user from token", "error", err)
 					http.Error(w, INVALID_AUTH_TOKEN, http.StatusUnauthorized)
 					return
 				}
 
-				// If user is nil, the token doesn't exist or is invalid
-				if user == nil {
+				if user != nil {
+					ctxUser = user
+				} else if !GetHeaderAuthConfig().Enabled {
+					// In cookie-only mode, an unknown token means the session
+					// was revoked — keep the legacy "kick the client" behaviour
+					// so explicit token revocation still works.
 					log.Error(r.Context(), "Token not found in database")
 					http.Error(w, INVALID_AUTH_TOKEN, http.StatusUnauthorized)
 					return
 				}
+				// SSO mode + stale cookie: fall through to header auth below so
+				// the reverse proxy can transparently re-establish the session.
+			}
 
-				// put it in context
-				ctx := AddUserToContext(r.Context(), user)
-
-				// and call the next with our new context
-				r = r.WithContext(ctx)
-			} else {
-				// No cookie: optionally accept a Remote-User header injected by
-				// a trusted reverse proxy. This lets Authelia / authentik /
-				// oauth2-proxy front Photoview as true SSO — the proxy's
-				// identity becomes a Photoview session.
-				if user, err := applyHeaderAuth(db, w, r); err != nil {
+			if ctxUser == nil {
+				// No usable cookie: optionally accept a Remote-User header
+				// injected by a trusted reverse proxy. This lets Authelia /
+				// authentik / oauth2-proxy front Photoview as true SSO — the
+				// proxy's identity becomes a Photoview session.
+				user, err := applyHeaderAuth(db, w, r)
+				if err != nil {
 					log.Error(r.Context(), "Header auth failed", "error", err)
 					http.Error(w, INTERNAL_SERVER_ERROR, http.StatusInternalServerError)
 					return
-				} else if user != nil {
-					r = r.WithContext(AddUserToContext(r.Context(), user))
-				} else {
-					log.Info(r.Context(), "Did not find auth-token cookie")
 				}
+				if user != nil {
+					ctxUser = user
+				}
+			}
+
+			if ctxUser != nil {
+				r = r.WithContext(AddUserToContext(r.Context(), ctxUser))
+			} else {
+				log.Info(r.Context(), "Did not find auth-token cookie")
 			}
 
 			next.ServeHTTP(w, r)
