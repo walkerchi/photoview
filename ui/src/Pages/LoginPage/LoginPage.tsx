@@ -135,7 +135,20 @@ const LoginPage = () => {
     if (initialSetupData?.siteInfo?.initialSetup) navigate('/initialSetup')
   }, [initialSetupData?.siteInfo?.initialSetup])
 
-  if (authToken() || initialSetupData?.siteInfo?.initialSetup) {
+  // SSO mode: identity is owned by the reverse proxy, so a full-page reload
+  // lets the proxy re-authenticate the user transparently instead of dead-
+  // ending on Photoview's own login form.
+  useEffect(() => {
+    if (initialSetupData?.siteInfo?.headerAuthEnabled && !authToken()) {
+      window.location.replace('/')
+    }
+  }, [initialSetupData?.siteInfo?.headerAuthEnabled])
+
+  if (
+    authToken() ||
+    initialSetupData?.siteInfo?.initialSetup ||
+    initialSetupData?.siteInfo?.headerAuthEnabled
+  ) {
     return null
   }
 

@@ -20,8 +20,16 @@ import (
 	"gorm.io/gorm"
 )
 
+// errAccountManagementDelegated is the canonical error every internal account
+// management mutation returns when SSO owns identity. Keeping it as one
+// shared sentinel makes the UI's "SSO mode" branch easy to recognize.
+var errAccountManagementDelegated = errors.New("account management is delegated to the SSO provider")
+
 // AuthorizeUser is the resolver for the authorizeUser field.
 func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, password string) (*models.AuthorizeResult, error) {
+	if auth.GetHeaderAuthConfig().Enabled {
+		return &models.AuthorizeResult{Success: false, Status: errAccountManagementDelegated.Error()}, nil
+	}
 	db := r.DB(ctx)
 	user, err := models.AuthorizeUser(db, username, password)
 	if err != nil {
@@ -55,6 +63,9 @@ func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, p
 
 // InitialSetupWizard is the resolver for the initialSetupWizard field.
 func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username string, password string, rootPath string) (*models.AuthorizeResult, error) {
+	if auth.GetHeaderAuthConfig().Enabled {
+		return &models.AuthorizeResult{Success: false, Status: errAccountManagementDelegated.Error()}, nil
+	}
 	db := r.DB(ctx)
 	siteInfo, err := models.GetSiteInfo(db)
 	if err != nil {
@@ -108,6 +119,9 @@ func (r *mutationResolver) InitialSetupWizard(ctx context.Context, username stri
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *string, password *string, admin *bool) (*models.User, error) {
+	if auth.GetHeaderAuthConfig().Enabled {
+		return nil, errAccountManagementDelegated
+	}
 	db := r.DB(ctx)
 
 	if username == nil && password == nil && admin == nil {
@@ -146,6 +160,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id int, username *str
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, username string, password *string, admin bool) (*models.User, error) {
+	if auth.GetHeaderAuthConfig().Enabled {
+		return nil, errAccountManagementDelegated
+	}
 	var user *models.User
 
 	transactionError := r.DB(ctx).Transaction(func(tx *gorm.DB) error {
@@ -167,6 +184,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, username string, pass
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id int) (*models.User, error) {
+	if auth.GetHeaderAuthConfig().Enabled {
+		return nil, errAccountManagementDelegated
+	}
 	return actions.DeleteUser(r.DB(ctx), id)
 }
 

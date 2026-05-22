@@ -4,21 +4,17 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL query operation: CheckInitialSetup
+// GraphQL query operation: CheckHeaderAuthEnabled
 // ====================================================
 
-export interface CheckInitialSetup_siteInfo {
+export interface CheckHeaderAuthEnabled_siteInfo {
   __typename: "SiteInfo";
-  /**
-   * Whether or not the initial setup wizard should be shown
-   */
-  initialSetup: boolean;
   /**
    * Whether reverse-proxy header authentication is enabled — when true, the UI should hide its own login and user-management views because identity is owned by the proxy
    */
   headerAuthEnabled: boolean;
 }
 
-export interface CheckInitialSetup {
-  siteInfo: CheckInitialSetup_siteInfo;
+export interface CheckHeaderAuthEnabled {
+  siteInfo: CheckHeaderAuthEnabled_siteInfo;
 }

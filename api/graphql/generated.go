@@ -226,6 +226,7 @@ type ComplexityRoot struct {
 	SiteInfo struct {
 		ConcurrentWorkers    func(childComplexity int) int
 		FaceDetectionEnabled func(childComplexity int) int
+		HeaderAuthEnabled    func(childComplexity int) int
 		InitialSetup         func(childComplexity int) int
 		PeriodicScanInterval func(childComplexity int) int
 	}
@@ -352,6 +353,8 @@ type ShareTokenResolver interface {
 }
 type SiteInfoResolver interface {
 	FaceDetectionEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error)
+
+	HeaderAuthEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error)
 }
 type SubscriptionResolver interface {
 	Notification(ctx context.Context) (<-chan *models.Notification, error)
@@ -1356,6 +1359,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SiteInfo.FaceDetectionEnabled(childComplexity), true
+	case "SiteInfo.headerAuthEnabled":
+		if e.ComplexityRoot.SiteInfo.HeaderAuthEnabled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SiteInfo.HeaderAuthEnabled(childComplexity), true
 	case "SiteInfo.initialSetup":
 		if e.ComplexityRoot.SiteInfo.InitialSetup == nil {
 			break
@@ -1903,6 +1912,8 @@ func (ec *executionContext) childFields_SiteInfo(ctx context.Context, field grap
 		return ec.fieldContext_SiteInfo_periodicScanInterval(ctx, field)
 	case "concurrentWorkers":
 		return ec.fieldContext_SiteInfo_concurrentWorkers(ctx, field)
+	case "headerAuthEnabled":
+		return ec.fieldContext_SiteInfo_headerAuthEnabled(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type SiteInfo", field.Name)
 }
@@ -7564,6 +7575,29 @@ func (ec *executionContext) fieldContext_SiteInfo_concurrentWorkers(_ context.Co
 	return graphql.NewScalarFieldContext("SiteInfo", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
+func (ec *executionContext) _SiteInfo_headerAuthEnabled(ctx context.Context, field graphql.CollectedField, obj *models.SiteInfo) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SiteInfo_headerAuthEnabled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.SiteInfo().HeaderAuthEnabled(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SiteInfo_headerAuthEnabled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SiteInfo", field, true, true, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _Subscription_notification(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	return graphql.ResolveFieldStream(
 		ctx,
@@ -11484,6 +11518,42 @@ func (ec *executionContext) _SiteInfo(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "headerAuthEnabled":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SiteInfo_headerAuthEnabled(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

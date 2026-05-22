@@ -6,6 +6,7 @@ export const INITIAL_SETUP_QUERY = gql`
   query CheckInitialSetup {
     siteInfo {
       initialSetup
+      headerAuthEnabled
     }
   }
 `

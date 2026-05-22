@@ -8,6 +8,8 @@ type SiteInfo {
   periodicScanInterval: Int! @isAdmin
   "How many max concurrent scanner jobs that should run at once"
   concurrentWorkers: Int! @isAdmin
+  "Whether reverse-proxy header authentication is enabled — when true, the UI should hide its own login and user-management views because identity is owned by the proxy"
+  headerAuthEnabled: Boolean!
 }
 
 extend type Query {

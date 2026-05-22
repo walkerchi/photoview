@@ -9,6 +9,7 @@ import (
 	"context"
 
 	api "github.com/photoview/photoview/api/graphql"
+	"github.com/photoview/photoview/api/graphql/auth"
 	"github.com/photoview/photoview/api/graphql/models"
 	"github.com/photoview/photoview/api/scanner/face_detection"
 )
@@ -21,6 +22,11 @@ func (r *queryResolver) SiteInfo(ctx context.Context) (*models.SiteInfo, error) 
 // FaceDetectionEnabled is the resolver for the faceDetectionEnabled field.
 func (r *siteInfoResolver) FaceDetectionEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error) {
 	return face_detection.GlobalFaceDetector != nil, nil
+}
+
+// HeaderAuthEnabled is the resolver for the headerAuthEnabled field.
+func (r *siteInfoResolver) HeaderAuthEnabled(ctx context.Context, obj *models.SiteInfo) (bool, error) {
+	return auth.GetHeaderAuthConfig().Enabled, nil
 }
 
 // SiteInfo returns api.SiteInfoResolver implementation.
