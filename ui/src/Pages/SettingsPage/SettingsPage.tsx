@@ -1,5 +1,4 @@
 import React from 'react'
-import { gql, useQuery } from '@apollo/client'
 import { useTranslation } from 'react-i18next'
 import styled from 'styled-components'
 import { useIsAdmin } from '../../components/routes/AuthorizedRoute'
@@ -9,14 +8,6 @@ import UserPreferences from './UserPreferences'
 import UsersTable from './Users/UsersTable'
 import VersionInfo from './VersionInfo'
 import classNames from 'classnames'
-
-const HEADER_AUTH_QUERY = gql`
-  query CheckHeaderAuthEnabled {
-    siteInfo {
-      headerAuthEnabled
-    }
-  }
-`
 
 type SectionTitleProps = {
   children: string
@@ -47,10 +38,6 @@ export const InputLabelDescription = styled.p.attrs({
 const SettingsPage = () => {
   const { t } = useTranslation()
   const isAdmin = useIsAdmin()
-  const { data: ssoData } = useQuery(HEADER_AUTH_QUERY)
-  // When SSO owns identity, hide Photoview's user management entirely —
-  // creating/editing/deleting users must happen in the SSO provider.
-  const ssoMode = ssoData?.siteInfo?.headerAuthEnabled === true
 
   return (
     <Layout title={t('title.settings', 'Settings')}>
@@ -58,7 +45,7 @@ const SettingsPage = () => {
       {isAdmin && (
         <>
           <ScannerSection />
-          {!ssoMode && <UsersTable />}
+          <UsersTable />
         </>
       )}
       <VersionInfo />

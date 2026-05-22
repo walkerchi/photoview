@@ -30,9 +30,18 @@ export interface settingsUsersQuery_user {
   rootAlbums: settingsUsersQuery_user_rootAlbums[];
 }
 
+export interface settingsUsersQuery_siteInfo {
+  __typename: "SiteInfo";
+  /**
+   * Whether reverse-proxy header authentication is enabled — when true, the UI should hide its own login and user-management views because identity is owned by the proxy
+   */
+  headerAuthEnabled: boolean;
+}
+
 export interface settingsUsersQuery {
   /**
    * List of registered users, must be admin to call
    */
   user: settingsUsersQuery_user[];
+  siteInfo: settingsUsersQuery_siteInfo;
 }

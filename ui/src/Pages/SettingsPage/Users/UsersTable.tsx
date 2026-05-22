@@ -28,6 +28,9 @@ export const USERS_QUERY = gql`
         filePath
       }
     }
+    siteInfo {
+      headerAuthEnabled
+    }
   }
 `
 
@@ -49,9 +52,19 @@ const UsersTable = () => {
     ))
   }
 
+  const ssoMode = data?.siteInfo?.headerAuthEnabled === true
+
   return (
     <div>
       <SectionTitle>{t('settings.users.title', 'Users')}</SectionTitle>
+      {ssoMode && (
+        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+          {t(
+            'settings.users.sso_notice',
+            'Users are managed by the SSO provider. This list shows accounts that have signed in to Photoview at least once.'
+          )}
+        </p>
+      )}
       <Loader active={loading} />
       <TableScrollWrapper>
         <Table className="w-full max-w-6xl">
@@ -80,30 +93,34 @@ const UsersTable = () => {
 
           <TableBody>
             {userRows}
-            <AddUserRow
-              show={showAddUser}
-              setShow={setShowAddUser}
-              onUserAdded={() => {
-                setShowAddUser(false)
-                refetch()
-              }}
-            />
+            {!ssoMode && (
+              <AddUserRow
+                show={showAddUser}
+                setShow={setShowAddUser}
+                onUserAdded={() => {
+                  setShowAddUser(false)
+                  refetch()
+                }}
+              />
+            )}
           </TableBody>
 
-          <TableFooter>
-            <TableRow>
-              <TableHeaderCell colSpan={4} className="text-right">
-                <Button
-                  variant="positive"
-                  background="white"
-                  disabled={showAddUser}
-                  onClick={() => setShowAddUser(true)}
-                >
-                  {t('settings.users.table.new_user', 'New user')}
-                </Button>
-              </TableHeaderCell>
-            </TableRow>
-          </TableFooter>
+          {!ssoMode && (
+            <TableFooter>
+              <TableRow>
+                <TableHeaderCell colSpan={4} className="text-right">
+                  <Button
+                    variant="positive"
+                    background="white"
+                    disabled={showAddUser}
+                    onClick={() => setShowAddUser(true)}
+                  >
+                    {t('settings.users.table.new_user', 'New user')}
+                  </Button>
+                </TableHeaderCell>
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </TableScrollWrapper>
     </div>
