@@ -47,6 +47,13 @@ func (cli *MagickWand) EncodeJpeg(inputPath string, outputPath string, jpegQuali
 		return fmt.Errorf("ImagickWand set JPEG quality %d for %q error: %w", jpegQuality, inputPath, err)
 	}
 
+	// Progressive JPEG: the browser can draw a low-res pass as soon as it has
+	// the first few KB, instead of waiting for the whole file. Same bytes on
+	// the wire, much better perceived load time on large highres images.
+	if err := wand.SetInterlaceScheme(imagick.INTERLACE_JPEG); err != nil {
+		return fmt.Errorf("ImagickWand set progressive JPEG interlace for %q error: %w", inputPath, err)
+	}
+
 	if err := wand.WriteImage(outputPath); err != nil {
 		return fmt.Errorf("ImagickWand write %q error: %w", outputPath, err)
 	}
@@ -71,6 +78,10 @@ func (cli *MagickWand) GenerateThumbnail(inputPath string, outputPath string, wi
 
 	if err := wand.SetImageCompressionQuality(70); err != nil {
 		return fmt.Errorf("ImagickWand set JPEG quality %d for %q error: %w", 70, inputPath, err)
+	}
+
+	if err := wand.SetInterlaceScheme(imagick.INTERLACE_JPEG); err != nil {
+		return fmt.Errorf("ImagickWand set progressive JPEG interlace for %q error: %w", inputPath, err)
 	}
 
 	if err := wand.WriteImage(outputPath); err != nil {
