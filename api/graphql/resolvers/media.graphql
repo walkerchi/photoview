@@ -58,6 +58,28 @@ type MediaEXIF {
   coordinates: Coordinates
 }
 
+"Source-site metadata extracted from a sidecar JSON file (e.g. gallery-dl, yt-dlp). Populated for media downloaded from sites like pixiv/twitter where the host platform owns identity, dates and tags."
+type MediaSource {
+  id: ID!
+  media: Media!
+  "Site identifier from the extractor (e.g. \"pixiv\", \"twitter\")"
+  source: String!
+  "Canonical URL of the original artwork on the source site, if it can be reconstructed"
+  url: String
+  "Title given to the work by its author"
+  title: String
+  "Author / artist display name on the source site"
+  author: String
+  "URL to the author's profile on the source site, if known"
+  authorUrl: String
+  "Author-supplied caption / description text. May contain markup as posted upstream."
+  caption: String
+  "Tags as posted on the source site"
+  tags: [String!]!
+  "When the artwork was originally posted, not when it was downloaded"
+  postDate: Time
+}
+
 "Metadata specific to video media"
 type VideoMetadata {
   id: ID!
@@ -86,6 +108,8 @@ type Media {
   "The album that holds the media"
   album: Album!
   exif: MediaEXIF
+  "Sidecar-derived source metadata for media downloaded from sites like pixiv (where the file has a companion .json describing it)"
+  sourceMetadata: MediaSource
   videoMetadata: VideoMetadata
   favorite: Boolean!
   type: MediaType!

@@ -20,11 +20,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// errAccountManagementDelegated is the canonical error every internal account
-// management mutation returns when SSO owns identity. Keeping it as one
-// shared sentinel makes the UI's "SSO mode" branch easy to recognize.
-var errAccountManagementDelegated = errors.New("account management is delegated to the SSO provider")
-
 // AuthorizeUser is the resolver for the authorizeUser field.
 func (r *mutationResolver) AuthorizeUser(ctx context.Context, username string, password string) (*models.AuthorizeResult, error) {
 	if auth.GetHeaderAuthConfig().Enabled {
@@ -361,3 +356,13 @@ func (r *userResolver) RootAlbums(ctx context.Context, obj *models.User) (albums
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	var errAccountManagementDelegated = errors.New("account management is delegated to the SSO provider")
+*/

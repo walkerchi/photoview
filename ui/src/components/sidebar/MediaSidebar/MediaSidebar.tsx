@@ -21,6 +21,7 @@ import { sidebarDownloadQuery_media_downloads } from '../__generated__/sidebarDo
 import ExifDetails from './MediaSidebarExif'
 import MediaSidebarPeople from './MediaSidebarPeople'
 import MediaSidebarMap from './MediaSidebarMap'
+import MediaSidebarSource, { SourceMetadata } from './MediaSidebarSource'
 import {
   sidebarMediaQuery,
   sidebarMediaQueryVariables,
@@ -81,6 +82,17 @@ export const SIDEBAR_MEDIA_QUERY = gql`
           latitude
           longitude
         }
+      }
+      sourceMetadata {
+        id
+        source
+        url
+        title
+        author
+        authorUrl
+        caption
+        tags
+        postDate
       }
       album {
         id
@@ -227,6 +239,7 @@ const SidebarContent = ({ media, hidePreview }: SidebarContentProps) => {
         )}
       </div>
       <ExifDetails media={media} />
+      <MediaSidebarSource source={media.sourceMetadata} />
       {albumPath}
       <MediaSidebarPeople media={media} />
       {sidebarMap}
@@ -259,6 +272,7 @@ export interface MediaSidebarMedia {
   }
   videoMetadata?: sidebarMediaQuery_media_videoMetadata | null
   exif?: sidebarMediaQuery_media_exif | null
+  sourceMetadata?: SourceMetadata | null
   faces?: sidebarMediaQuery_media_faces[]
   downloads?: sidebarDownloadQuery_media_downloads[]
   album?: {

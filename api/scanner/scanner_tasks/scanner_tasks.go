@@ -23,6 +23,7 @@ var allTasks []scanner_task.ScannerTask = []scanner_task.ScannerTask{
 	BlurhashTask{},
 	ExifTask{},
 	VideoMetadataTask{},
+	MetadataSidecarTask{},
 	cleanup_tasks.MediaCleanupTask{},
 }
 

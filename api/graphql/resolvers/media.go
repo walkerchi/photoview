@@ -7,6 +7,8 @@ package resolvers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/photoview/photoview/api/dataloader"
@@ -17,6 +19,7 @@ import (
 	"github.com/photoview/photoview/api/scanner/face_detection"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 // Thumbnail is the resolver for the thumbnail field.
@@ -64,6 +67,18 @@ func (r *mediaResolver) Exif(ctx context.Context, obj *models.Media) (*models.Me
 	}
 
 	return &exif, nil
+}
+
+// SourceMetadata is the resolver for the sourceMetadata field.
+func (r *mediaResolver) SourceMetadata(ctx context.Context, obj *models.Media) (*models.MediaMetadata, error) {
+	var meta models.MediaMetadata
+	if err := r.DB(ctx).Where("media_id = ?", obj.ID).First(&meta).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &meta, nil
 }
 
 // Favorite is the resolver for the favorite field.
@@ -145,6 +160,20 @@ func (r *mediaResolver) Faces(ctx context.Context, obj *models.Media) ([]*models
 	}
 
 	return faces, nil
+}
+
+// Tags is the resolver for the tags field.
+func (r *mediaSourceResolver) Tags(ctx context.Context, obj *models.MediaMetadata) ([]string, error) {
+	if obj == nil || obj.Tags == "" {
+		return []string{}, nil
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(obj.Tags), &tags); err != nil {
+		// Stored value is corrupt: log via the return error so we surface it
+		// rather than silently dropping data.
+		return nil, fmt.Errorf("decode media metadata tags for media_id=%d: %w", obj.MediaID, err)
+	}
+	return tags, nil
 }
 
 // FavoriteMedia is the resolver for the favoriteMedia field.
@@ -233,4 +262,8 @@ func (r *queryResolver) MediaList(ctx context.Context, ids []int) ([]*models.Med
 // Media returns api.MediaResolver implementation.
 func (r *Resolver) Media() api.MediaResolver { return &mediaResolver{r} }
 
+// MediaSource returns api.MediaSourceResolver implementation.
+func (r *Resolver) MediaSource() api.MediaSourceResolver { return &mediaSourceResolver{r} }
+
 type mediaResolver struct{ *Resolver }
+type mediaSourceResolver struct{ *Resolver }

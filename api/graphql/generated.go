@@ -34,6 +34,7 @@ type ResolverRoot interface {
 	FaceGroup() FaceGroupResolver
 	ImageFace() ImageFaceResolver
 	Media() MediaResolver
+	MediaSource() MediaSourceResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	ShareToken() ShareTokenResolver
@@ -94,22 +95,23 @@ type ComplexityRoot struct {
 	}
 
 	Media struct {
-		Album         func(childComplexity int) int
-		Blurhash      func(childComplexity int) int
-		Date          func(childComplexity int) int
-		Downloads     func(childComplexity int) int
-		Exif          func(childComplexity int) int
-		Faces         func(childComplexity int) int
-		Favorite      func(childComplexity int) int
-		HighRes       func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Path          func(childComplexity int) int
-		Shares        func(childComplexity int) int
-		Thumbnail     func(childComplexity int) int
-		Title         func(childComplexity int) int
-		Type          func(childComplexity int) int
-		VideoMetadata func(childComplexity int) int
-		VideoWeb      func(childComplexity int) int
+		Album          func(childComplexity int) int
+		Blurhash       func(childComplexity int) int
+		Date           func(childComplexity int) int
+		Downloads      func(childComplexity int) int
+		Exif           func(childComplexity int) int
+		Faces          func(childComplexity int) int
+		Favorite       func(childComplexity int) int
+		HighRes        func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Path           func(childComplexity int) int
+		Shares         func(childComplexity int) int
+		SourceMetadata func(childComplexity int) int
+		Thumbnail      func(childComplexity int) int
+		Title          func(childComplexity int) int
+		Type           func(childComplexity int) int
+		VideoMetadata  func(childComplexity int) int
+		VideoWeb       func(childComplexity int) int
 	}
 
 	MediaDownload struct {
@@ -132,6 +134,19 @@ type ComplexityRoot struct {
 		Lens               func(childComplexity int) int
 		Maker              func(childComplexity int) int
 		Media              func(childComplexity int) int
+	}
+
+	MediaSource struct {
+		Author    func(childComplexity int) int
+		AuthorURL func(childComplexity int) int
+		Caption   func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Media     func(childComplexity int) int
+		PostDate  func(childComplexity int) int
+		Source    func(childComplexity int) int
+		SourceURL func(childComplexity int) int
+		Tags      func(childComplexity int) int
+		Title     func(childComplexity int) int
 	}
 
 	MediaURL struct {
@@ -294,6 +309,7 @@ type MediaResolver interface {
 	VideoWeb(ctx context.Context, obj *models.Media) (*models.MediaURL, error)
 	Album(ctx context.Context, obj *models.Media) (*models.Album, error)
 	Exif(ctx context.Context, obj *models.Media) (*models.MediaEXIF, error)
+	SourceMetadata(ctx context.Context, obj *models.Media) (*models.MediaMetadata, error)
 
 	Favorite(ctx context.Context, obj *models.Media) (bool, error)
 	Type(ctx context.Context, obj *models.Media) (models.MediaType, error)
@@ -301,6 +317,9 @@ type MediaResolver interface {
 	Shares(ctx context.Context, obj *models.Media) ([]*models.ShareToken, error)
 	Downloads(ctx context.Context, obj *models.Media) ([]*models.MediaDownload, error)
 	Faces(ctx context.Context, obj *models.Media) ([]*models.ImageFace, error)
+}
+type MediaSourceResolver interface {
+	Tags(ctx context.Context, obj *models.MediaMetadata) ([]string, error)
 }
 type MutationResolver interface {
 	ResetAlbumCover(ctx context.Context, albumID int) (*models.Album, error)
@@ -627,6 +646,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Media.Shares(childComplexity), true
+	case "Media.sourceMetadata":
+		if e.ComplexityRoot.Media.SourceMetadata == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.SourceMetadata(childComplexity), true
 	case "Media.thumbnail":
 		if e.ComplexityRoot.Media.Thumbnail == nil {
 			break
@@ -755,6 +780,67 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MediaEXIF.Media(childComplexity), true
+
+	case "MediaSource.author":
+		if e.ComplexityRoot.MediaSource.Author == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Author(childComplexity), true
+	case "MediaSource.authorUrl":
+		if e.ComplexityRoot.MediaSource.AuthorURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.AuthorURL(childComplexity), true
+	case "MediaSource.caption":
+		if e.ComplexityRoot.MediaSource.Caption == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Caption(childComplexity), true
+	case "MediaSource.id":
+		if e.ComplexityRoot.MediaSource.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.ID(childComplexity), true
+	case "MediaSource.media":
+		if e.ComplexityRoot.MediaSource.Media == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Media(childComplexity), true
+	case "MediaSource.postDate":
+		if e.ComplexityRoot.MediaSource.PostDate == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.PostDate(childComplexity), true
+	case "MediaSource.source":
+		if e.ComplexityRoot.MediaSource.Source == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Source(childComplexity), true
+	case "MediaSource.url":
+		if e.ComplexityRoot.MediaSource.SourceURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.SourceURL(childComplexity), true
+	case "MediaSource.tags":
+		if e.ComplexityRoot.MediaSource.Tags == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Tags(childComplexity), true
+	case "MediaSource.title":
+		if e.ComplexityRoot.MediaSource.Title == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaSource.Title(childComplexity), true
 
 	case "MediaURL.fileSize":
 		if e.ComplexityRoot.MediaURL.FileSize == nil {
@@ -1756,6 +1842,8 @@ func (ec *executionContext) childFields_Media(ctx context.Context, field graphql
 		return ec.fieldContext_Media_album(ctx, field)
 	case "exif":
 		return ec.fieldContext_Media_exif(ctx, field)
+	case "sourceMetadata":
+		return ec.fieldContext_Media_sourceMetadata(ctx, field)
 	case "videoMetadata":
 		return ec.fieldContext_Media_videoMetadata(ctx, field)
 	case "favorite":
@@ -1818,6 +1906,32 @@ func (ec *executionContext) childFields_MediaEXIF(ctx context.Context, field gra
 		return ec.fieldContext_MediaEXIF_coordinates(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type MediaEXIF", field.Name)
+}
+
+func (ec *executionContext) childFields_MediaSource(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_MediaSource_id(ctx, field)
+	case "media":
+		return ec.fieldContext_MediaSource_media(ctx, field)
+	case "source":
+		return ec.fieldContext_MediaSource_source(ctx, field)
+	case "url":
+		return ec.fieldContext_MediaSource_url(ctx, field)
+	case "title":
+		return ec.fieldContext_MediaSource_title(ctx, field)
+	case "author":
+		return ec.fieldContext_MediaSource_author(ctx, field)
+	case "authorUrl":
+		return ec.fieldContext_MediaSource_authorUrl(ctx, field)
+	case "caption":
+		return ec.fieldContext_MediaSource_caption(ctx, field)
+	case "tags":
+		return ec.fieldContext_MediaSource_tags(ctx, field)
+	case "postDate":
+		return ec.fieldContext_MediaSource_postDate(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type MediaSource", field.Name)
 }
 
 func (ec *executionContext) childFields_MediaURL(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -3961,6 +4075,38 @@ func (ec *executionContext) fieldContext_Media_exif(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _Media_sourceMetadata(ctx context.Context, field graphql.CollectedField, obj *models.Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Media_sourceMetadata(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Media().SourceMetadata(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *models.MediaMetadata) graphql.Marshaler {
+			return ec.marshalOMediaSource2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMediaMetadata(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Media_sourceMetadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_MediaSource(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Media_videoMetadata(ctx context.Context, field graphql.CollectedField, obj *models.Media) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4574,6 +4720,245 @@ func (ec *executionContext) fieldContext_MediaEXIF_coordinates(_ context.Context
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _MediaSource_id(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNID2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_media(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_media(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Media, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v models.Media) graphql.Marshaler {
+			return ec.marshalNMedia2githubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMedia(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSource",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Media(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSource_source(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_source(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_url(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_url(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SourceURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_title(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_title(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_author(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_author(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Author, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_author(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_authorUrl(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_authorUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AuthorURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_authorUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_caption(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_caption(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Caption, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_caption(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_tags(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_tags(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.MediaSource().Tags(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, true, true, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MediaSource_postDate(ctx context.Context, field graphql.CollectedField, obj *models.MediaMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MediaSource_postDate(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PostDate, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MediaSource_postDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MediaSource", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
 func (ec *executionContext) _MediaURL_url(ctx context.Context, field graphql.CollectedField, obj *models.MediaURL) (ret graphql.Marshaler) {
@@ -10193,6 +10578,39 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "sourceMetadata":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Media_sourceMetadata(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "videoMetadata":
 			out.Values[i] = ec._Media_videoMetadata(ctx, field, obj)
 		case "favorite":
@@ -10494,6 +10912,103 @@ func (ec *executionContext) _MediaEXIF(ctx context.Context, sel ast.SelectionSet
 			out.Values[i] = ec._MediaEXIF_exposureProgram(ctx, field, obj)
 		case "coordinates":
 			out.Values[i] = ec._MediaEXIF_coordinates(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferred), math.MaxInt32)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaSourceImplementors = []string{"MediaSource"}
+
+func (ec *executionContext) _MediaSource(ctx context.Context, sel ast.SelectionSet, obj *models.MediaMetadata) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaSourceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaSource")
+		case "id":
+			out.Values[i] = ec._MediaSource_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "media":
+			out.Values[i] = ec._MediaSource_media(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "source":
+			out.Values[i] = ec._MediaSource_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "url":
+			out.Values[i] = ec._MediaSource_url(ctx, field, obj)
+		case "title":
+			out.Values[i] = ec._MediaSource_title(ctx, field, obj)
+		case "author":
+			out.Values[i] = ec._MediaSource_author(ctx, field, obj)
+		case "authorUrl":
+			out.Values[i] = ec._MediaSource_authorUrl(ctx, field, obj)
+		case "caption":
+			out.Values[i] = ec._MediaSource_caption(ctx, field, obj)
+		case "tags":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MediaSource_tags(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "postDate":
+			out.Values[i] = ec._MediaSource_postDate(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12653,6 +13168,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
 	res, err := graphql.UnmarshalTime(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12988,6 +13533,13 @@ func (ec *executionContext) marshalOMediaEXIF2ᚖgithubᚗcomᚋphotoviewᚋphot
 	return ec._MediaEXIF(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOMediaSource2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMediaMetadata(ctx context.Context, sel ast.SelectionSet, v *models.MediaMetadata) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MediaSource(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOMediaURL2ᚖgithubᚗcomᚋphotoviewᚋphotoviewᚋapiᚋgraphqlᚋmodelsᚐMediaURL(ctx context.Context, sel ast.SelectionSet, v *models.MediaURL) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -13033,6 +13585,18 @@ func (ec *executionContext) unmarshalOShareTokenCredentials2ᚖgithubᚗcomᚋph
 	}
 	res, err := ec.unmarshalInputShareTokenCredentials(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

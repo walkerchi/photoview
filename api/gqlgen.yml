@@ -46,6 +46,15 @@ models:
     fields:
       dateShot:
         fieldName: DateShotWithOffset
+  MediaSource:
+    model: github.com/photoview/photoview/api/graphql/models.MediaMetadata
+    fields:
+      url:
+        fieldName: SourceURL
+      authorUrl:
+        fieldName: AuthorURL
+      tags:
+        resolver: true
   VideoMetadata:
     model: github.com/photoview/photoview/api/graphql/models.VideoMetadata
   Album:

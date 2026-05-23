@@ -135,6 +135,43 @@ export interface sidebarMediaQuery_media_exif {
   coordinates: sidebarMediaQuery_media_exif_coordinates | null;
 }
 
+export interface sidebarMediaQuery_media_sourceMetadata {
+  __typename: "MediaSource";
+  id: string;
+  /**
+   * Site identifier from the extractor (e.g. "pixiv", "twitter")
+   */
+  source: string;
+  /**
+   * Canonical URL of the original artwork on the source site, if it can be reconstructed
+   */
+  url: string | null;
+  /**
+   * Title given to the work by its author
+   */
+  title: string | null;
+  /**
+   * Author / artist display name on the source site
+   */
+  author: string | null;
+  /**
+   * URL to the author's profile on the source site, if known
+   */
+  authorUrl: string | null;
+  /**
+   * Author-supplied caption / description text. May contain markup as posted upstream.
+   */
+  caption: string | null;
+  /**
+   * Tags as posted on the source site
+   */
+  tags: string[];
+  /**
+   * When the artwork was originally posted, not when it was downloaded
+   */
+  postDate: Time | null;
+}
+
 export interface sidebarMediaQuery_media_album_path {
   __typename: "Album";
   id: string;
@@ -234,6 +271,10 @@ export interface sidebarMediaQuery_media {
   videoWeb: sidebarMediaQuery_media_videoWeb | null;
   videoMetadata: sidebarMediaQuery_media_videoMetadata | null;
   exif: sidebarMediaQuery_media_exif | null;
+  /**
+   * Sidecar-derived source metadata for media downloaded from sites like pixiv (where the file has a companion .json describing it)
+   */
+  sourceMetadata: sidebarMediaQuery_media_sourceMetadata | null;
   /**
    * The album that holds the media
    */

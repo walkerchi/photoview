@@ -159,6 +159,7 @@ var database_models []interface{} = []interface{}{
 	&models.MediaURL{},
 	&models.Album{},
 	&models.MediaEXIF{},
+	&models.MediaMetadata{},
 	&models.VideoMetadata{},
 	&models.ShareToken{},
 	&models.UserMediaData{},
